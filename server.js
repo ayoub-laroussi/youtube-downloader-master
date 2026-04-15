@@ -317,8 +317,8 @@ app.post('/api/open-folder', (req, res) => {
 
 // ─── Start server ────────────────────────────────────────────────────────────
 if (require.main === module) {
-  app.listen(PORT, () => {
-    console.log(`\n🎬 YouTube Downloader running at http://localhost:${PORT}\n`);
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log(`\n🎬 YouTube Downloader running at http://localhost:${PORT} et http://<VOTRE-IP-LOCALE>:${PORT}\n`);
   });
 } else {
   module.exports = app;

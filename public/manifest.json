@@ -1,0 +1,16 @@
+{
+  "name": "YT Downloader",
+  "short_name": "YT Downloader",
+  "description": "Téléchargeur YouTube personnel en MP3 et MP4",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0a0a0a",
+  "theme_color": "#ff0000",
+  "icons": [
+    {
+      "src": "./img/youtube-downloader.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
