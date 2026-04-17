@@ -45,4 +45,18 @@ module.exports = {
       [FuseV1Options.OnlyLoadAppFromAsar]: true,
     }),
   ],
+  publishers: [
+    {
+      name: '@electron-forge/publisher-github',
+      config: {
+        repository: {
+          owner: 'ayoub-laroussi',
+          name: 'youtube-downloader-master'
+        },
+        prerelease: false,
+        draft: true
+
+      }
+    }
+  ]
 };

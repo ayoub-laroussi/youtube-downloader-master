@@ -1,6 +1,6 @@
 {
   "name": "youtube-downloader",
-  "version": "1.0.0",
+  "version": "1.2.1",
   "author": "YT Downloader",
   "description": "Personal YouTube downloader - MP3 & MP4",
   "main": "main.js",
@@ -8,12 +8,15 @@
     "start": "electron-forge start",
     "server": "node server.js",
     "package": "electron-forge package",
-    "make": "electron-forge make"
+    "make": "electron-forge make",
+    "publish": "electron-forge publish"
   },
   "dependencies": {
     "cors": "^2.8.5",
+    "electron-is-dev": "^3.0.1",
     "electron-squirrel-startup": "^1.0.1",
-    "express": "^4.21.0"
+    "express": "^4.21.0",
+    "update-electron-app": "^3.1.2"
   },
   "devDependencies": {
     "@electron-forge/cli": "^7.11.1",
@@ -23,8 +26,9 @@
     "@electron-forge/maker-zip": "^7.11.1",
     "@electron-forge/plugin-auto-unpack-natives": "^7.11.1",
     "@electron-forge/plugin-fuses": "^7.11.1",
+    "@electron-forge/publisher-github": "^7.11.1",
     "@electron/fuses": "^1.8.0",
-    "electron": "^34.2.0"
+    "electron": "^41.2.1"
   },
   "private": true
 }

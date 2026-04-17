@@ -2,6 +2,14 @@ const { app, BrowserWindow, shell } = require('electron');
 app.setAppUserModelId('com.ytdownloader.app');
 if (require('electron-squirrel-startup')) app.quit();
 const path = require('path');
+const isDev = require('electron-is-dev');
+
+// Initialize auto-updater only in production mode
+if (!isDev) {
+  require('update-electron-app')({
+    updateInterval: '1 hour' // Check for updates every hour
+  });
+}
 
 let win;
 
