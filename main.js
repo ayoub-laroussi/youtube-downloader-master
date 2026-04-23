@@ -1,4 +1,4 @@
-const { app, BrowserWindow, shell } = require('electron');
+const { app, BrowserWindow, shell, ipcMain, dialog } = require('electron');
 app.setAppUserModelId('com.ytdownloader.app');
 if (require('electron-squirrel-startup')) app.quit();
 const path = require('path');
@@ -26,6 +26,7 @@ function createWindow(port) {
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
+      preload: path.join(__dirname, 'public', 'js', 'preload.js'),
     },
   });
 
@@ -50,6 +51,15 @@ app.whenReady().then(() => {
 
 app.on('window-all-closed', () => {
   app.quit();
+});
+
+ipcMain.handle('select-folder', async () => {
+  const win = BrowserWindow.getFocusedWindow();
+  const result = await dialog.showOpenDialog(win, {
+    properties: ['openDirectory'],
+    title: 'Choisir le dossier de téléchargement'
+  });
+  return result.filePaths[0] || null;
 });
 
 app.on('activate', () => {
