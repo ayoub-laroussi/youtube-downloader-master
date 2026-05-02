@@ -48,6 +48,26 @@ You only need to do this **once**. Windows will remember your choice.
 
 ---
 
+## 🧩 Browser Extension (Chrome & Edge)
+
+A companion extension is available to add a quick download button directly on YouTube pages.
+
+### Installation in Developer Mode:
+
+**For Chrome:**
+1. Open Chrome and go to `chrome://extensions/`
+2. Enable **Developer mode** (top right corner)
+3. Click **Load unpacked**
+4. Select the `extension` folder from this project
+
+**For Edge:**
+1. Open Edge and go to `edge://extensions/`
+2. Enable **Developer mode** (bottom left corner)
+3. Click **Load unpacked**
+4. Select the `extension-edge` folder from this project
+
+---
+
 ## 🛠️ For Developers
 
 ### Run in dev mode
