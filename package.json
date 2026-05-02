@@ -1,34 +1,66 @@
 {
   "name": "youtube-downloader",
-  "version": "1.2.1",
+  "version": "1.2.2",
   "author": "YT Downloader",
   "description": "Personal YouTube downloader - MP3 & MP4",
   "main": "main.js",
   "scripts": {
-    "start": "electron-forge start",
+    "start": "electron .",
     "server": "node server.js",
-    "package": "electron-forge package",
-    "make": "electron-forge make",
-    "publish": "electron-forge publish"
+    "build": "electron-builder --win",
+    "build mac": "electron-builder --mac",
+    "build linux": "electron-builder --linux",
+    "build:dir": "electron-builder --win --dir",
+    "dist": "electron-builder --win --publish never"
   },
   "dependencies": {
     "cors": "^2.8.5",
-    "electron-is-dev": "^3.0.1",
-    "electron-squirrel-startup": "^1.0.1",
-    "express": "^4.21.0",
-    "update-electron-app": "^3.1.2"
+    "express": "^4.21.0"
   },
   "devDependencies": {
-    "@electron-forge/cli": "^7.11.1",
-    "@electron-forge/maker-deb": "^7.11.1",
-    "@electron-forge/maker-rpm": "^7.11.1",
-    "@electron-forge/maker-squirrel": "^7.11.1",
-    "@electron-forge/maker-zip": "^7.11.1",
-    "@electron-forge/plugin-auto-unpack-natives": "^7.11.1",
-    "@electron-forge/plugin-fuses": "^7.11.1",
-    "@electron-forge/publisher-github": "^7.11.1",
-    "@electron/fuses": "^1.8.0",
-    "electron": "^41.2.1"
+    "electron": "^41.2.1",
+    "electron-builder": "^26.0.12"
+  },
+  "build": {
+    "appId": "com.ytdownloader.app",
+    "productName": "YT Downloader",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "server.js",
+      "public/**/*",
+      "node_modules/**/*",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "bin",
+        "to": "bin",
+        "filter": [
+          "**/*"
+        ]
+      }
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "public/img/youtube-downloader.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "installerIcon": "public/img/youtube-downloader.ico",
+      "uninstallerIcon": "public/img/youtube-downloader.ico",
+      "installerHeaderIcon": "public/img/youtube-downloader.ico"
+    }
   },
   "private": true
 }

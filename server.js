@@ -66,6 +66,11 @@ function isValidYouTubeUrl(url) {
   return pattern.test(url);
 }
 
+function isValidYTMusicUrl(url) {
+  const pattern = /^(https?:\/\/)?(music\.youtube\.com\/)/;
+  return pattern.test(url);
+}
+
 function isValidTikTokUrl(url) {
   const pattern = /^(https?:\/\/)?(www\.|vt\.|vm\.)?(tiktok\.com\/)/;
   return pattern.test(url);
@@ -79,8 +84,8 @@ function isPlaylistUrl(url) {
 app.get('/api/info', (req, res) => {
   const { url } = req.query;
 
-  if (!url || (!isValidYouTubeUrl(url) && !isValidTikTokUrl(url))) {
-    return res.status(400).json({ error: 'URL invalide. Veuillez entrer un lien YouTube ou TikTok valide.' });
+  if (!url || (!isValidYouTubeUrl(url) && !isValidYTMusicUrl(url) && !isValidTikTokUrl(url))) {
+    return res.status(400).json({ error: 'URL invalide. Veuillez entrer un lien YouTube, YouTube Music ou TikTok valide.' });
   }
 
   const isPlaylist = isPlaylistUrl(url);

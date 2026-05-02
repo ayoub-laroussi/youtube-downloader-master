@@ -7,6 +7,21 @@ const state = {
   isPlaylist: false,
 };
 
+// ─── Deep Link Handler (called from Electron main process) ──────────────────
+window.handleDeepLink = function(videoUrl) {
+  console.log('[DEEP LINK] Received URL in renderer:', videoUrl);
+  if (videoUrl) {
+    const urlInput = document.getElementById('url-input');
+    if (urlInput) {
+      urlInput.value = videoUrl;
+      // Small delay to ensure DOM is fully ready
+      setTimeout(() => {
+        fetchVideoInfo();
+      }, 300);
+    }
+  }
+};
+
 // ─── DOM Elements ───────────────────────────────────────────────────────────
 const $ = (sel) => document.querySelector(sel);
 const urlInput = $('#url-input');

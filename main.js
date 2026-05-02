@@ -1,15 +1,63 @@
 const { app, BrowserWindow, shell } = require('electron');
 app.setAppUserModelId('com.ytdownloader.app');
-if (require('electron-squirrel-startup')) app.quit();
-const path = require('path');
-const isDev = require('electron-is-dev');
 
-// Initialize auto-updater only in production mode
-if (!isDev) {
-  require('update-electron-app')({
-    updateInterval: '1 hour' // Check for updates every hour
+const path = require('path');
+const isDev = process.env.ELECTRON_IS_DEV === '1' || !app.isPackaged;
+
+// ─── Deep Link Protocol Registration ────────────────────────────────────────
+const PROTOCOL = 'ytdownloader';
+
+if (process.defaultApp) {
+  // Dev mode: pass the script path so Electron knows what to launch
+  if (process.argv.length >= 2) {
+    app.setAsDefaultProtocolClient(PROTOCOL, process.execPath, [path.resolve(process.argv[1])]);
+  }
+} else {
+  // Production (packaged app)
+  app.setAsDefaultProtocolClient(PROTOCOL);
+}
+
+// ─── Single Instance Lock ────────────────────────────────────────────────────
+// Prevent multiple windows when a deep link is clicked while app is running
+let pendingDeepLinkUrl = null;
+
+const gotTheLock = app.requestSingleInstanceLock();
+
+if (!gotTheLock) {
+  app.quit();
+} else {
+  app.on('second-instance', (event, commandLine) => {
+    // On Windows, the deep link URL is passed as the last argument
+    const deepLinkArg = commandLine.find(arg => arg.startsWith(`${PROTOCOL}://`));
+    if (deepLinkArg) {
+      handleDeepLink(deepLinkArg);
+    }
+    // Focus the existing window
+    if (win) {
+      if (win.isMinimized()) win.restore();
+      win.focus();
+    }
   });
 }
+
+// ─── Deep Link Handler ───────────────────────────────────────────────────────
+function handleDeepLink(deepLinkUrl) {
+  try {
+    const parsed = new URL(deepLinkUrl);
+    const videoUrl = parsed.searchParams.get('url');
+    console.log('[DEEP LINK] Received:', deepLinkUrl);
+    console.log('[DEEP LINK] Extracted video URL:', videoUrl);
+
+    if (videoUrl && win && win.webContents) {
+      const safeUrl = videoUrl.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+      win.webContents.executeJavaScript(`window.handleDeepLink("${safeUrl}")`);
+    }
+  } catch (err) {
+    console.error('[DEEP LINK] Error parsing URL:', err.message);
+  }
+}
+
+
 
 let win;
 
@@ -30,6 +78,20 @@ function createWindow(port) {
   });
 
   win.loadURL(`http://localhost:${port}`);
+
+  // Once the page is fully loaded, check if we were launched via a deep link
+  win.webContents.on('did-finish-load', () => {
+    // Check if the app was launched with a deep link URL (first instance)
+    const deepLinkArg = process.argv.find(arg => arg.startsWith(`${PROTOCOL}://`));
+    if (deepLinkArg) {
+      handleDeepLink(deepLinkArg);
+    }
+    // Handle any pending deep link from second-instance that arrived before window was ready
+    if (pendingDeepLinkUrl) {
+      handleDeepLink(pendingDeepLinkUrl);
+      pendingDeepLinkUrl = null;
+    }
+  });
 
   // Open external links in system browser
   win.webContents.setWindowOpenHandler(({ url }) => {

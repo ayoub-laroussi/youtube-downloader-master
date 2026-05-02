@@ -1,0 +1,129 @@
+/* ─── YT Downloader Extension — Button Styles ──────────────────────────────── */
+
+.ytdl-btn-container {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  margin-left: 8px;
+  vertical-align: middle;
+}
+
+.ytdl-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 16px;
+  height: 36px;
+  border: none;
+  border-radius: 18px;
+  background: linear-gradient(135deg, #ff0033 0%, #cc0029 100%);
+  color: #ffffff;
+  font-family: 'Roboto', 'Arial', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  white-space: nowrap;
+  box-shadow: 0 1px 3px rgba(255, 0, 51, 0.3);
+  position: relative;
+  overflow: hidden;
+}
+
+.ytdl-btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 18px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, transparent 50%);
+  opacity: 0;
+  transition: opacity 0.25s ease;
+}
+
+.ytdl-btn:hover {
+  background: linear-gradient(135deg, #ff1a4d 0%, #e6002e 100%);
+  box-shadow: 0 4px 12px rgba(255, 0, 51, 0.4);
+  transform: translateY(-1px);
+}
+
+.ytdl-btn:hover::before {
+  opacity: 1;
+}
+
+.ytdl-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 3px rgba(255, 0, 51, 0.3);
+}
+
+/* Click animation */
+.ytdl-btn.ytdl-clicked {
+  background: linear-gradient(135deg, #00c853 0%, #009624 100%) !important;
+  box-shadow: 0 4px 12px rgba(0, 200, 83, 0.4);
+}
+
+.ytdl-btn.ytdl-clicked .ytdl-label::after {
+  content: ' ✓';
+}
+
+.ytdl-icon {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+.ytdl-label {
+  line-height: 1;
+}
+
+/* Tooltip */
+.ytdl-tooltip {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%) translateY(4px);
+  padding: 6px 12px;
+  background: #1a1a2e;
+  color: #e0e0e0;
+  font-family: 'Roboto', 'Arial', sans-serif;
+  font-size: 12px;
+  border-radius: 6px;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  z-index: 9999;
+}
+
+.ytdl-tooltip::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 5px solid transparent;
+  border-top-color: #1a1a2e;
+}
+
+.ytdl-btn-container:hover .ytdl-tooltip {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* ─── Dark theme adaptation (YouTube Dark Mode) ──────────────────────────── */
+html[dark] .ytdl-btn,
+[dark] .ytdl-btn {
+  box-shadow: 0 1px 4px rgba(255, 0, 51, 0.25);
+}
+
+/* ─── Responsive: hide label on small containers ─────────────────────────── */
+@media (max-width: 700px) {
+  .ytdl-label {
+    display: none;
+  }
+  
+  .ytdl-btn {
+    padding: 0 10px;
+    width: 36px;
+    justify-content: center;
+  }
+}
