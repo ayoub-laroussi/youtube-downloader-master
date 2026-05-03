@@ -40,6 +40,18 @@ if (!gotTheLock) {
   });
 }
 
+// ─── macOS Deep Link Handler ─────────────────────────────────────────────────
+app.on('open-url', (event, url) => {
+  event.preventDefault();
+  if (win && win.webContents) {
+    handleDeepLink(url);
+    if (win.isMinimized()) win.restore();
+    win.focus();
+  } else {
+    pendingDeepLinkUrl = url;
+  }
+});
+
 // ─── Deep Link Handler ───────────────────────────────────────────────────────
 function handleDeepLink(deepLinkUrl) {
   try {

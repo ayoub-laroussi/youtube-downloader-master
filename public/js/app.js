@@ -12,7 +12,7 @@ window.handleDeepLink = function(videoUrl) {
   console.log('[DEEP LINK] Received URL in renderer:', videoUrl);
   if (videoUrl) {
     const urlInput = document.getElementById('url-input');
-    if (urlInput) {
+    if (urlInput) {4
       urlInput.value = videoUrl;
       // Small delay to ensure DOM is fully ready
       setTimeout(() => {

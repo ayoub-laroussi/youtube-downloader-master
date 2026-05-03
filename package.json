@@ -24,6 +24,14 @@
   "build": {
     "appId": "com.ytdownloader.app",
     "productName": "YT Downloader",
+    "protocols": [
+      {
+        "name": "ytdownloader",
+        "schemes": [
+          "ytdownloader"
+        ]
+      }
+    ],
     "directories": {
       "output": "dist"
     },
@@ -60,6 +68,16 @@
       "installerIcon": "public/img/youtube-downloader.ico",
       "uninstallerIcon": "public/img/youtube-downloader.ico",
       "installerHeaderIcon": "public/img/youtube-downloader.ico"
+    },
+    "mac": {
+      "target": [
+        "dmg"
+      ],
+      "icon": "public/img/youtube-downloader.icns"
+    },
+    "dmg": {
+      "title": "YT Downloader",
+      "icon": "public/img/youtube-downloader.icns"
     }
   },
   "private": true

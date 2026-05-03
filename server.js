@@ -19,6 +19,9 @@ const possibleBinPaths = [
   path.join(__dirname, 'bin'),                          // dev: ./bin/
   path.join(__dirname, '..', 'bin'),
   __dirname,
+  '/usr/local/bin',                                   // macOS Intel / common Homebrew
+  '/opt/homebrew/bin',                                // macOS Apple Silicon Homebrew
+  path.join(os.homedir(), '.local', 'bin'),             // User local bin
 ];
 
 let YTDLP_BIN = 'yt-dlp';
@@ -185,12 +188,16 @@ app.post('/api/download', (req, res) => {
 
   const downloadId = crypto.randomUUID();
   const ext = format === 'mp3' ? 'mp3' : 'mp4';
-  const outTemplate = path.join(userSettings.downloadDir, `%(title)s.%(ext)s`);
+  
+  const audioBitrate = format === 'mp3' ? (quality || '320') : null;
+  const videoQuality = format === 'mp4' ? (quality || '1080') : null;
+  
+  const suffix = format === 'mp3' ? `_${audioBitrate}kbps` : `_${videoQuality}p`;
+  const outTemplate = path.join(userSettings.downloadDir, `%(title)s${suffix}.%(ext)s`);
 
   let args = ['--no-playlist', '--newline', '--concurrent-fragments', '4', '--ffmpeg-location', FFMPEG_BIN, '--windows-filenames'];
 
   if (format === 'mp3') {
-    const audioBitrate = quality || '320';
     args.push(
       '-f', 'bestaudio/best',
       '-x',
@@ -201,7 +208,6 @@ app.post('/api/download', (req, res) => {
       url
     );
   } else {
-    const videoQuality = quality || '1080';
     args.push(
       '-f', `bestvideo[height<=${videoQuality}][ext=mp4]+bestaudio[ext=m4a]/bestvideo[height<=${videoQuality}]+bestaudio/best[height<=${videoQuality}]`,
       '--merge-output-format', 'mp4',
@@ -313,9 +319,14 @@ app.post('/api/settings', (req, res) => {
 
 app.post('/api/open-folder', (req, res) => {
   const target = req.body.file || userSettings.downloadDir;
-  let cmd = process.platform === 'win32' ? `explorer.exe ` : `xdg-open `;
-  if (req.body.file) cmd += process.platform === 'win32' ? `/select,"${target}"` : `"${path.dirname(target)}"`;
-  else cmd += `"${target}"`;
+  let cmd;
+  if (process.platform === 'win32') {
+    cmd = req.body.file ? `explorer.exe /select,"${target}"` : `explorer.exe "${target}"`;
+  } else if (process.platform === 'darwin') {
+    cmd = req.body.file ? `open -R "${target}"` : `open "${target}"`;
+  } else {
+    cmd = req.body.file ? `xdg-open "${path.dirname(target)}"` : `xdg-open "${target}"`;
+  }
   require('child_process').exec(cmd);
   res.json({ success: true });
 });
