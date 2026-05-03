@@ -62,6 +62,8 @@ const settingsModal = $('#settings-modal');
 const settingsCancel = $('#settings-cancel');
 const settingsSave = $('#settings-save');
 const downloadDirInput = $('#download-dir-input');
+const themeBtn = $('#theme-btn');
+const browseBtn = $('#browse-btn');
 
 // ─── Utility ────────────────────────────────────────────────────────────────
 function formatViews(count) {
@@ -467,6 +469,22 @@ urlInput.addEventListener('paste', () => {
   }, 100);
 });
 
+// ─── Theme Toggle ────────────────────────────────────────────────────────────
+function loadTheme() {
+  const savedTheme = localStorage.getItem('theme') || 'light';
+  document.documentElement.setAttribute('data-theme', savedTheme);
+}
+
+function toggleTheme() {
+  const currentTheme = document.documentElement.getAttribute('data-theme');
+  const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', newTheme);
+  localStorage.setItem('theme', newTheme);
+}
+
+themeBtn.addEventListener('click', toggleTheme);
+loadTheme();
+
 // ─── Settings Events ────────────────────────────────────────────────────────
 async function loadSettings() {
   try {
@@ -497,5 +515,18 @@ settingsSave.addEventListener('click', async () => {
     else alert('Erreur lors de la sauvegarde.');
   } catch(e) {
     alert('Erreur: ' + e.message);
+  }
+});
+
+browseBtn.addEventListener('click', async () => {
+  try {
+    if (window.electronAPI && window.electronAPI.selectFolder) {
+      const folderPath = await window.electronAPI.selectFolder();
+      if (folderPath) {
+        downloadDirInput.value = folderPath;
+      }
+    }
+  } catch (e) {
+    console.error('Erreur lors de la sélection du dossier:', e);
   }
 });

@@ -5,40 +5,44 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>YT Downloader — MP3 & MP4</title>
   <meta name="description" content="Téléchargeur YouTube personnel — MP3 et MP4 haute qualité">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
   <link rel="manifest" href="manifest.json">
-  <style>
-    .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; z-index: 1000; }
-    .modal.hidden { display: none; }
-    .modal-content { padding: 30px; width: 450px; max-width: 90%; border-radius: 12px; }
-  </style>
 </head>
 <body>
-  <!-- Animated background -->
-  <div class="bg-gradient"></div>
-  <div class="bg-grid"></div>
-
   <main class="container">
     <!-- Header -->
     <header class="header">
-      <div class="header-top" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+      <div class="header-top">
         <div class="logo">
           <div class="logo-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <polygon points="5 3 19 12 5 21 5 3"/>
-            </svg>
+            <img src="img/youtube-downloader.ico" alt="Logo">
           </div>
           <h1>YT <span class="accent">Downloader</span></h1>
         </div>
-        <button id="settings-btn" class="btn" style="padding: 10px; border-radius: 50%; background: rgba(255,255,255,0.1);" title="Paramètres">
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="12" cy="12" r="3"></circle>
-            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
-          </svg>
-        </button>
+        <div class="header-actions">
+          <button id="theme-btn" title="Changer de thème">
+            <svg class="sun-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="5"></circle>
+              <line x1="12" y1="1" x2="12" y2="3"></line>
+              <line x1="12" y1="21" x2="12" y2="23"></line>
+              <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+              <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+              <line x1="1" y1="12" x2="3" y2="12"></line>
+              <line x1="21" y1="12" x2="23" y2="12"></line>
+              <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+              <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+            </svg>
+            <svg class="moon-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+            </svg>
+          </button>
+          <button id="settings-btn" title="Paramètres">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="3"></circle>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+            </svg>
+          </button>
+        </div>
       </div>
       <p class="subtitle">Télécharge tes vidéos YouTube et sons YouTube Music en MP3 ou MP4</p>
     </header>
@@ -51,15 +55,22 @@
 
     <!-- Settings Modal -->
     <div id="settings-modal" class="modal hidden">
-      <div class="modal-content glass">
-        <h2 style="margin-bottom: 15px; font-size: 1.5rem;">Paramètres</h2>
-        <div class="form-group" style="display: flex; flex-direction: column; gap: 8px;">
-          <label style="font-size: 0.9rem; color: #a1a1aa;">Dossier d'enregistrement des vidéos :</label>
-          <input type="text" id="download-dir-input" style="width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #fff; border-radius: 8px; font-size: 0.95rem; outline: none;" placeholder="Ex: C:\Users\Nom\Downloads" />
+      <div class="modal-content">
+        <h2>Paramètres</h2>
+        <div class="form-group">
+          <label>Dossier d'enregistrement :</label>
+          <div class="input-with-button">
+            <input type="text" id="download-dir-input" placeholder="Ex: C:\Users\Nom\Downloads" />
+            <button id="browse-btn" class="browse-btn" title="Parcourir les dossiers">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+              </svg>
+            </button>
+          </div>
         </div>
-        <div class="modal-actions" style="margin-top: 25px; display: flex; justify-content: flex-end; gap: 12px;">
-          <button id="settings-cancel" class="btn" style="background: transparent; border: 1px solid rgba(255,255,255,0.2);">Annuler</button>
-          <button id="settings-save" class="btn btn-primary" style="padding: 10px 20px;">Enregistrer</button>
+        <div class="modal-actions">
+          <button id="settings-cancel" class="btn">Annuler</button>
+          <button id="settings-save" class="btn btn-primary">Enregistrer</button>
         </div>
       </div>
     </div>
