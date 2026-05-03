@@ -22,8 +22,10 @@ if (process.defaultApp) {
 let pendingDeepLinkUrl = null;
 
 const gotTheLock = app.requestSingleInstanceLock();
+console.log('gotTheLock:', gotTheLock);
 
 if (!gotTheLock) {
+  console.log('Quitting because we did not get the lock');
   app.quit();
 } else {
   app.on('second-instance', (event, commandLine) => {
