@@ -164,9 +164,7 @@ function showPlaylist(data) {
   renderQualities(plQualityGrid, data);
 
   // Render video list
-  while (playlistVideosEl.firstChild) {
-    playlistVideosEl.removeChild(playlistVideosEl.firstChild);
-  }
+  playlistVideosEl.innerHTML = '';
   data.videos.forEach((video, index) => {
     const item = createPlaylistItem(video, index);
     playlistVideosEl.appendChild(item);
@@ -182,91 +180,30 @@ function createPlaylistItem(video, index) {
   div.dataset.url = video.url;
   div.dataset.index = index;
 
-  const numberDiv = document.createElement('div');
-  numberDiv.className = 'playlist-item-number';
-  numberDiv.textContent = index + 1;
-  div.appendChild(numberDiv);
-
-  const thumbDiv = document.createElement('div');
-  thumbDiv.className = 'playlist-item-thumb';
-  
-  const img = document.createElement('img');
-  img.src = video.thumbnail;
-  img.alt = video.title;
-  img.loading = 'lazy';
-  img.onerror = function() {
-    this.src = 'data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 16 9%22><rect fill=%22%23111128%22 width=%2216%22 height=%229%22/></svg>';
-  };
-  thumbDiv.appendChild(img);
-  
-  if (video.duration) {
-    const durationSpan = document.createElement('span');
-    durationSpan.className = 'duration-badge';
-    durationSpan.textContent = video.duration_string || formatDuration(video.duration);
-    thumbDiv.appendChild(durationSpan);
-  }
-  div.appendChild(thumbDiv);
-
-  const infoDiv = document.createElement('div');
-  infoDiv.className = 'playlist-item-info';
-  
-  const titleH3 = document.createElement('h3');
-  titleH3.className = 'playlist-item-title';
-  titleH3.textContent = video.title;
-  infoDiv.appendChild(titleH3);
-  
-  const channelP = document.createElement('p');
-  channelP.className = 'playlist-item-channel';
-  channelP.textContent = video.channel || '';
-  infoDiv.appendChild(channelP);
-  div.appendChild(infoDiv);
-
-  const downloadBtn = document.createElement('button');
-  downloadBtn.className = 'btn btn-item-download';
-  downloadBtn.dataset.url = video.url;
-  downloadBtn.title = 'Télécharger';
-  
-  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-  svg.setAttribute('viewBox', '0 0 24 24');
-  svg.setAttribute('fill', 'none');
-  svg.setAttribute('stroke', 'currentColor');
-  svg.setAttribute('stroke-width', '2');
-  
-  const path1 = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-  path1.setAttribute('d', 'M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4');
-  svg.appendChild(path1);
-  
-  const polyline = document.createElementNS('http://www.w3.org/2000/svg', 'polyline');
-  polyline.setAttribute('points', '7 10 12 15 17 10');
-  svg.appendChild(polyline);
-  
-  const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-  line.setAttribute('x1', '12');
-  line.setAttribute('y1', '15');
-  line.setAttribute('x2', '12');
-  line.setAttribute('y2', '3');
-  svg.appendChild(line);
-  
-  downloadBtn.appendChild(svg);
-  div.appendChild(downloadBtn);
-
-  const progressDiv = document.createElement('div');
-  progressDiv.className = 'playlist-item-progress hidden';
-  
-  const miniProgressBar = document.createElement('div');
-  miniProgressBar.className = 'mini-progress-bar';
-  
-  const miniProgressFill = document.createElement('div');
-  miniProgressFill.className = 'mini-progress-fill';
-  miniProgressBar.appendChild(miniProgressFill);
-  progressDiv.appendChild(miniProgressBar);
-  
-  const miniProgressText = document.createElement('span');
-  miniProgressText.className = 'mini-progress-text';
-  miniProgressText.textContent = '0%';
-  progressDiv.appendChild(miniProgressText);
-  
-  div.appendChild(progressDiv);
+  div.innerHTML = `
+    <div class="playlist-item-number">${index + 1}</div>
+    <div class="playlist-item-thumb">
+      <img src="${video.thumbnail}" alt="${video.title}" loading="lazy" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 16 9%22><rect fill=%22%23111128%22 width=%2216%22 height=%229%22/></svg>'" />
+      ${video.duration ? `<span class="duration-badge">${video.duration_string || formatDuration(video.duration)}</span>` : ''}
+    </div>
+    <div class="playlist-item-info">
+      <h3 class="playlist-item-title">${video.title}</h3>
+      <p class="playlist-item-channel">${video.channel || ''}</p>
+    </div>
+    <button class="btn btn-item-download" data-url="${video.url}" title="Télécharger">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+        <polyline points="7 10 12 15 17 10"/>
+        <line x1="12" y1="15" x2="12" y2="3"/>
+      </svg>
+    </button>
+    <div class="playlist-item-progress hidden">
+      <div class="mini-progress-bar">
+        <div class="mini-progress-fill"></div>
+      </div>
+      <span class="mini-progress-text">0%</span>
+    </div>
+  `;
 
   // Per-item download button
   const dlBtn = div.querySelector('.btn-item-download');
@@ -280,9 +217,7 @@ function createPlaylistItem(video, index) {
 
 // ─── Render Quality Chips ───────────────────────────────────────────────────
 function renderQualities(gridEl, data) {
-  while (gridEl.firstChild) {
-    gridEl.removeChild(gridEl.firstChild);
-  }
+  gridEl.innerHTML = '';
 
   const qualities = state.format === 'mp4'
     ? (data?.videoQualities || [2160, 1440, 1080, 720, 480, 360])

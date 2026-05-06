@@ -13,47 +13,17 @@
     container.id = BUTTON_ID;
     container.className = 'ytdl-btn-container';
 
-    const button = document.createElement('button');
-    button.className = 'ytdl-btn';
-    button.title = 'Télécharger avec YT Downloader';
-    
-    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-    svg.setAttribute('class', 'ytdl-icon');
-    svg.setAttribute('viewBox', '0 0 24 24');
-    svg.setAttribute('fill', 'none');
-    svg.setAttribute('stroke', 'currentColor');
-    svg.setAttribute('stroke-width', '2');
-    svg.setAttribute('stroke-linecap', 'round');
-    svg.setAttribute('stroke-linejoin', 'round');
-    
-    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-    path.setAttribute('d', 'M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4');
-    svg.appendChild(path);
-    
-    const polyline = document.createElementNS('http://www.w3.org/2000/svg', 'polyline');
-    polyline.setAttribute('points', '7 10 12 15 17 10');
-    svg.appendChild(polyline);
-    
-    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-    line.setAttribute('x1', '12');
-    line.setAttribute('y1', '15');
-    line.setAttribute('x2', '12');
-    line.setAttribute('y2', '3');
-    svg.appendChild(line);
-    
-    button.appendChild(svg);
-    
-    const span = document.createElement('span');
-    span.className = 'ytdl-label';
-    span.textContent = 'Télécharger';
-    button.appendChild(span);
-    
-    container.appendChild(button);
-    
-    const tooltip = document.createElement('div');
-    tooltip.className = 'ytdl-tooltip';
-    tooltip.textContent = 'Ouvrir dans YT Downloader';
-    container.appendChild(tooltip);
+    container.innerHTML = `
+      <button class="ytdl-btn" title="Télécharger avec YT Downloader">
+        <svg class="ytdl-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="7 10 12 15 17 10"/>
+          <line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+        <span class="ytdl-label">Télécharger</span>
+      </button>
+      <div class="ytdl-tooltip">Ouvrir dans YT Downloader</div>
+    `;
 
     const btn = container.querySelector('.ytdl-btn');
     btn.addEventListener('click', (e) => {
