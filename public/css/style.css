@@ -234,6 +234,20 @@ body {
   color: white !important;
 }
 
+.nav-tiktok {
+  color: #FE2C55 !important;
+}
+
+.nav-tiktok:hover {
+  background: rgba(254, 44, 85, 0.12) !important;
+  color: #FE2C55 !important;
+}
+
+.nav-tiktok.active {
+  background: #FE2C55 !important;
+  color: white !important;
+}
+
 /* Modal */
 .modal {
   position: fixed;

@@ -49,7 +49,7 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const SETTINGS_FILE = path.join(os.homedir(), '.ytdownloader-settings.json');
 
-let userSettings = { downloadDir: path.join(os.homedir(), 'Downloads', 'YT Downloader') };
+let userSettings = { downloadDir: path.join(os.homedir(), 'Downloads', 'YT Downloader'), theme: 'light' };
 if (fs.existsSync(SETTINGS_FILE)) {
   try { Object.assign(userSettings, JSON.parse(fs.readFileSync(SETTINGS_FILE, 'utf8'))); } catch(e) {}
 }
@@ -437,8 +437,17 @@ app.post('/api/spotify-download', (req, res) => {
 app.get('/api/settings', (req, res) => res.json(userSettings));
 
 app.post('/api/settings', (req, res) => {
-  if (req.body.downloadDir) {
+  let updated = false;
+  if (req.body.downloadDir !== undefined) {
     userSettings.downloadDir = req.body.downloadDir;
+    updated = true;
+  }
+  if (req.body.theme !== undefined) {
+    userSettings.theme = req.body.theme;
+    updated = true;
+  }
+  
+  if (updated) {
     try {
       if (!fs.existsSync(userSettings.downloadDir)) fs.mkdirSync(userSettings.downloadDir, { recursive: true });
       fs.writeFileSync(SETTINGS_FILE, JSON.stringify(userSettings));
@@ -446,7 +455,9 @@ app.post('/api/settings', (req, res) => {
     } catch (e) {
       res.status(500).json({ error: 'Erreur écriture' });
     }
-  } else { res.status(400).json({ error: 'Missing parameter' }); }
+  } else {
+    res.status(400).json({ error: 'Missing parameter' });
+  }
 });
 
 // Rate-limit: évite d'ouvrir plusieurs fenêtres si plusieurs téléchargements se terminent en même temps

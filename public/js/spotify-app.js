@@ -203,18 +203,26 @@ urlInput.addEventListener('paste', () => {
 });
 
 // ─── Theme ───────────────────────────────────────────────────────────────────
-function loadTheme() {
+function initTheme() {
   const saved = localStorage.getItem('theme') || 'light';
   document.documentElement.setAttribute('data-theme', saved);
 }
-function toggleTheme() {
+async function toggleTheme() {
   const cur = document.documentElement.getAttribute('data-theme');
   const next = cur === 'dark' ? 'light' : 'dark';
   document.documentElement.setAttribute('data-theme', next);
   localStorage.setItem('theme', next);
+
+  try {
+    await fetch('/api/settings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ theme: next })
+    });
+  } catch(e) {}
 }
 themeBtn.addEventListener('click', toggleTheme);
-loadTheme();
+initTheme();
 
 // ─── Settings ────────────────────────────────────────────────────────────────
 async function loadSettings() {
@@ -222,6 +230,10 @@ async function loadSettings() {
     const res = await fetch('/api/settings');
     const data = await res.json();
     if (data.downloadDir) downloadDirInput.value = data.downloadDir;
+    if (data.theme) {
+      document.documentElement.setAttribute('data-theme', data.theme);
+      localStorage.setItem('theme', data.theme);
+    }
   } catch(e) {}
 }
 loadSettings();

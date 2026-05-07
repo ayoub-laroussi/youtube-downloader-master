@@ -166,9 +166,7 @@ function showPlaylist(data) {
   renderQualities(plQualityGrid, data);
 
   // Render video list
-  while (playlistVideosEl.firstChild) {
-    playlistVideosEl.removeChild(playlistVideosEl.firstChild);
-  }
+  playlistVideosEl.replaceChildren();
   data.videos.forEach((video, index) => {
     const item = createPlaylistItem(video, index);
     playlistVideosEl.appendChild(item);
@@ -282,9 +280,7 @@ function createPlaylistItem(video, index) {
 
 // ─── Render Quality Chips ───────────────────────────────────────────────────
 function renderQualities(gridEl, data) {
-  while (gridEl.firstChild) {
-    gridEl.removeChild(gridEl.firstChild);
-  }
+  gridEl.replaceChildren();
 
   // WAV is lossless — show a badge instead of quality chips
   if (state.format === 'wav') {
@@ -551,17 +547,24 @@ urlInput.addEventListener('paste', () => {
   }, 100);
 });
 
-// ─── Theme Toggle ────────────────────────────────────────────────────────────
+// ─── Theme Toggle ──────────────────────────────────────────────────────────
 function loadTheme() {
-  const savedTheme = localStorage.getItem('theme') || 'light';
-  document.documentElement.setAttribute('data-theme', savedTheme);
+  // Le thème est appliqué par le script inline dans <head> via /api/settings
+  // On ne fait rien ici pour éviter un flash
 }
 
-function toggleTheme() {
-  const currentTheme = document.documentElement.getAttribute('data-theme');
-  const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-  document.documentElement.setAttribute('data-theme', newTheme);
-  localStorage.setItem('theme', newTheme);
+async function toggleTheme() {
+  const cur = document.documentElement.getAttribute('data-theme') || 'light';
+  const next = cur === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', next);
+  // Sauvegarde côté serveur — persiste même si le port change au redémarrage
+  try {
+    await fetch('/api/settings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ theme: next })
+    });
+  } catch(e) {}
 }
 
 themeBtn.addEventListener('click', toggleTheme);
