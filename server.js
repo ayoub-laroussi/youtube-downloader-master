@@ -5,6 +5,7 @@ const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
 const os = require('os');
+const https = require('https');
 
 // ─── Detect if running inside a packaged Electron app ───────────────────────
 const isPackaged = __dirname.includes('app.asar');
@@ -76,6 +77,11 @@ function isValidYTMusicUrl(url) {
 
 function isValidTikTokUrl(url) {
   const pattern = /^(https?:\/\/)?(www\.|vt\.|vm\.)?(tiktok\.com\/)/;
+  return pattern.test(url);
+}
+
+function isValidSpotifyUrl(url) {
+  const pattern = /^(https?:\/\/)?(open\.spotify\.com\/)(intl-[a-z-]+\/)?(track|album|playlist)\/[A-Za-z0-9]+/;
   return pattern.test(url);
 }
 
@@ -182,20 +188,22 @@ app.post('/api/download', (req, res) => {
     return res.status(400).json({ error: 'URL manquante.' });
   }
 
-  if (!format || !['mp3', 'mp4'].includes(format)) {
-    return res.status(400).json({ error: 'Format invalide. Utilisez mp3 ou mp4.' });
+  if (!format || !['mp3', 'mp4', 'wav'].includes(format)) {
+    return res.status(400).json({ error: 'Format invalide. Utilisez mp3, mp4 ou wav.' });
   }
 
   const downloadId = crypto.randomUUID();
-  const ext = format === 'mp3' ? 'mp3' : 'mp4';
-  
+  const ext = format === 'mp3' ? 'mp3' : format === 'wav' ? 'wav' : 'mp4';
+
   const audioBitrate = format === 'mp3' ? (quality || '320') : null;
   const videoQuality = format === 'mp4' ? (quality || '1080') : null;
-  
-  const suffix = format === 'mp3' ? `_${audioBitrate}kbps` : `_${videoQuality}p`;
+
+  const suffix = format === 'mp3' ? `_${audioBitrate}kbps` : format === 'wav' ? '_wav' : `_${videoQuality}p`;
   const outTemplate = path.join(userSettings.downloadDir, `%(title)s${suffix}.%(ext)s`);
 
-  let args = ['--no-playlist', '--newline', '--concurrent-fragments', '4', '--ffmpeg-location', FFMPEG_BIN, '--windows-filenames'];
+  // --windows-filenames uniquement sur Windows pour éviter les caractères invalides
+  const filenameFlag = process.platform === 'win32' ? ['--windows-filenames'] : [];
+  let args = ['--no-playlist', '--newline', '--concurrent-fragments', '4', '--ffmpeg-location', FFMPEG_BIN, ...filenameFlag];
 
   if (format === 'mp3') {
     args.push(
@@ -203,6 +211,15 @@ app.post('/api/download', (req, res) => {
       '-x',
       '--audio-format', 'mp3',
       '--audio-quality', `${audioBitrate}K`,
+      '--postprocessor-args', 'ffmpeg:-threads 4',
+      '-o', outTemplate,
+      url
+    );
+  } else if (format === 'wav') {
+    args.push(
+      '-f', 'bestaudio/best',
+      '-x',
+      '--audio-format', 'wav',
       '--postprocessor-args', 'ffmpeg:-threads 4',
       '-o', outTemplate,
       url
@@ -242,7 +259,7 @@ app.post('/api/download', (req, res) => {
     }
     const mergeMatch = line.match(/Merging formats into "(.+)"/);
     if (mergeMatch) download.finalFile = mergeMatch[1];
-    const extractMatch = line.match(/Destination:\s+(.+\.(?:mp3|m4a|mp4|webm))/);
+    const extractMatch = line.match(/Destination:\s+(.+\.(?:mp3|m4a|mp4|webm|wav))/);
     if (extractMatch) download.finalFile = extractMatch[1];
 
     const progressMatch = line.match(/(\d+\.?\d*)%/);
@@ -302,6 +319,121 @@ app.get('/api/progress/:id', (req, res) => {
   });
 });
 
+// ─── GET /api/spotify-info ─────────────────────────────────────────────────
+app.get('/api/spotify-info', (req, res) => {
+  const { url } = req.query;
+  if (!url || !isValidSpotifyUrl(url)) {
+    return res.status(400).json({ error: 'URL Spotify invalide. Format: open.spotify.com/track/...' });
+  }
+
+  const oEmbedUrl = `https://open.spotify.com/oembed?url=${encodeURIComponent(url)}`;
+  const type = url.includes('/track/') ? 'track' : url.includes('/album/') ? 'album' : 'playlist';
+
+  https.get(oEmbedUrl, { headers: { 'User-Agent': 'Mozilla/5.0' } }, (response) => {
+    let data = '';
+    response.on('data', chunk => data += chunk);
+    response.on('end', () => {
+      try {
+        const json = JSON.parse(data);
+        const artist = json.author_name || '';
+        const searchQuery = artist ? `${artist} - ${json.title}` : json.title;
+        res.json({
+          type,
+          title: json.title,
+          artist,
+          thumbnail: json.thumbnail_url,
+          searchQuery,
+          url,
+        });
+      } catch (e) {
+        res.status(500).json({ error: 'Erreur lors du traitement Spotify.' });
+      }
+    });
+  }).on('error', () => {
+    res.status(500).json({ error: 'Impossible de récupérer les infos Spotify.' });
+  });
+});
+
+// ─── POST /api/spotify-download ─────────────────────────────────────────────
+app.post('/api/spotify-download', (req, res) => {
+  const { searchQuery, format } = req.body;
+
+  if (!searchQuery) return res.status(400).json({ error: 'Requête manquante.' });
+  if (!format || !['mp3', 'wav'].includes(format)) {
+    return res.status(400).json({ error: 'Format invalide. Utilisez mp3 ou wav.' });
+  }
+
+  const downloadId = crypto.randomUUID();
+  const outTemplate = path.join(userSettings.downloadDir, `%(title)s_spotify.%(ext)s`);
+  const searchUrl = `ytsearch1:${searchQuery} official audio`;
+
+  // Note: pas de --no-playlist car ytsearch1: est traité comme une playlist par yt-dlp
+  // --windows-filenames uniquement sur Windows
+  const spotifyFilenameFlag = process.platform === 'win32' ? ['--windows-filenames'] : [];
+  let args = ['--newline', '--playlist-items', '1', '--concurrent-fragments', '4', '--ffmpeg-location', FFMPEG_BIN, ...spotifyFilenameFlag];
+
+  if (format === 'wav') {
+    args.push('-f', 'bestaudio/best', '-x', '--audio-format', 'wav', '--postprocessor-args', 'ffmpeg:-threads 4', '-o', outTemplate, searchUrl);
+  } else {
+    args.push('-f', 'bestaudio/best', '-x', '--audio-format', 'mp3', '--audio-quality', '320K', '--postprocessor-args', 'ffmpeg:-threads 4', '-o', outTemplate, searchUrl);
+  }
+
+  const download = { id: downloadId, status: 'downloading', progress: 0, speed: '', eta: '', finalFile: '', error: null };
+  activeDownloads.set(downloadId, download);
+
+  console.log(`[${downloadId}] Starting Spotify download: ${searchQuery}`);
+  const ytdlp = spawn(YTDLP_BIN, args);
+
+  ytdlp.stdout.on('data', (data) => {
+    const line = data.toString().trim();
+    console.log(`[${downloadId}] ${line}`);
+    const destMatch = line.match(/Destination:\s+(.+)/);
+    if (destMatch && !line.includes('.fna') && !line.includes('.temp')) download.finalFile = destMatch[1];
+    const mergeMatch = line.match(/Merging formats into "(.+)"/);
+    if (mergeMatch) download.finalFile = mergeMatch[1];
+    const extractMatch = line.match(/Destination:\s+(.+\.(?:mp3|wav))/);
+    if (extractMatch) download.finalFile = extractMatch[1];
+    const progressMatch = line.match(/(\d+\.?\d*)%/);
+    if (progressMatch) download.progress = parseFloat(progressMatch[1]);
+    const speedMatch = line.match(/at\s+(.+?)\s/);
+    if (speedMatch) download.speed = speedMatch[1];
+    const etaMatch = line.match(/ETA\s+(\S+)/);
+    if (etaMatch) download.eta = etaMatch[1];
+  });
+
+  ytdlp.stderr.on('data', (data) => {
+    const line = data.toString().trim();
+    if (line) console.log(`[${downloadId}] stderr: ${line}`);
+    // yt-dlp sometimes writes Destination: to stderr (e.g. during post-processing)
+    const destMatch = line.match(/Destination:\s+(.+)/);
+    if (destMatch && !line.includes('.fna') && !line.includes('.temp') && !line.includes('.ytdl')) {
+      download.finalFile = destMatch[1].trim();
+    }
+    const extractMatch = line.match(/Destination:\s+(.+\.(?:mp3|wav))/);
+    if (extractMatch) download.finalFile = extractMatch[1].trim();
+    const progressMatch = line.match(/(\d+\.?\d*)%/);
+    if (progressMatch) download.progress = parseFloat(progressMatch[1]);
+  });
+
+  ytdlp.on('close', (code) => {
+    if (code === 0) {
+      download.status = 'done';
+      download.progress = 100;
+      // If finalFile was never captured, fallback to the download directory
+      if (!download.finalFile) {
+        download.finalFile = userSettings.downloadDir;
+      }
+    } else {
+      download.status = 'error';
+      download.error = 'Le t\u00e9l\u00e9chargement Spotify a \u00e9chou\u00e9.';
+    }
+  });
+
+  ytdlp.on('error', (err) => { download.status = 'error'; download.error = err.message; });
+
+  res.json({ downloadId });
+});
+
 app.get('/api/settings', (req, res) => res.json(userSettings));
 
 app.post('/api/settings', (req, res) => {
@@ -317,17 +449,41 @@ app.post('/api/settings', (req, res) => {
   } else { res.status(400).json({ error: 'Missing parameter' }); }
 });
 
+// Rate-limit: évite d'ouvrir plusieurs fenêtres si plusieurs téléchargements se terminent en même temps
+let lastFolderOpenTime = 0;
+const FOLDER_OPEN_COOLDOWN_MS = 2000;
+
 app.post('/api/open-folder', (req, res) => {
+  const now = Date.now();
+  if (now - lastFolderOpenTime < FOLDER_OPEN_COOLDOWN_MS) {
+    // Trop tôt — on ignore pour éviter les fenêtres en double
+    return res.json({ success: true, skipped: true });
+  }
+  lastFolderOpenTime = now;
+
   const target = req.body.file || userSettings.downloadDir;
   let cmd;
+
   if (process.platform === 'win32') {
-    cmd = req.body.file ? `explorer.exe /select,"${target}"` : `explorer.exe "${target}"`;
+    // Windows : ouvre l'Explorateur et sélectionne le fichier (ou ouvre le dossier)
+    cmd = req.body.file
+      ? `explorer.exe /select,"${target}"`
+      : `explorer.exe "${target}"`;
   } else if (process.platform === 'darwin') {
-    cmd = req.body.file ? `open -R "${target}"` : `open "${target}"`;
+    // macOS : ouvre le Finder et révèle le fichier (ou ouvre le dossier)
+    cmd = req.body.file
+      ? `open -R "${target}"`
+      : `open "${target}"`;
   } else {
-    cmd = req.body.file ? `xdg-open "${path.dirname(target)}"` : `xdg-open "${target}"`;
+    // Linux
+    cmd = req.body.file
+      ? `xdg-open "${path.dirname(target)}"`
+      : `xdg-open "${target}"`;
   }
-  require('child_process').exec(cmd);
+
+  require('child_process').exec(cmd, (err) => {
+    if (err) console.warn('[open-folder] exec error:', err.message);
+  });
   res.json({ success: true });
 });
 

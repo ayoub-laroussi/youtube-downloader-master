@@ -220,6 +220,20 @@ body {
   color: white;
 }
 
+.nav-spotify {
+  color: #1db954 !important;
+}
+
+.nav-spotify:hover {
+  background: rgba(29, 185, 84, 0.12) !important;
+  color: #1db954 !important;
+}
+
+.nav-spotify.active {
+  background: #1db954 !important;
+  color: white !important;
+}
+
 /* Modal */
 .modal {
   position: fixed;
@@ -565,6 +579,10 @@ body {
   grid-template-columns: 1fr 1fr;
   gap: 0.5rem;
   margin-bottom: 1.25rem;
+}
+
+.format-toggle.three-cols {
+  grid-template-columns: repeat(3, 1fr);
 }
 
 .format-btn {

@@ -51,6 +51,7 @@
     <nav class="nav-bar">
       <a href="index.html" class="nav-link">YouTube</a>
       <a href="tiktok.html" class="nav-link active">TikTok</a>
+      <a href="spotify.html" class="nav-link nav-spotify">Spotify</a>
     </nav>
 
     <div id="settings-modal" class="modal hidden">
@@ -145,7 +146,7 @@
         <h3 class="options-title">Options de téléchargement</h3>
 
         <!-- Format Toggle -->
-        <div class="format-toggle">
+        <div class="format-toggle three-cols">
           <button id="btn-mp4" class="format-btn active" data-format="mp4">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"/>
@@ -168,6 +169,13 @@
             </svg>
             <span>MP3</span>
             <small>Audio</small>
+          </button>
+          <button id="btn-wav" class="format-btn" data-format="wav">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="2 12 5 6 8 16 11 8 14 14 17 10 20 12 22 12"/>
+            </svg>
+            <span>WAV</span>
+            <small>Sans perte</small>
           </button>
         </div>
 
@@ -218,7 +226,7 @@
 
         <!-- Playlist Format & Quality -->
         <div class="playlist-options">
-          <div class="format-toggle">
+          <div class="format-toggle three-cols">
             <button id="pl-btn-mp4" class="format-btn active" data-format="mp4">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"/>
@@ -237,6 +245,13 @@
               </svg>
               <span>MP3</span>
               <small>Audio</small>
+            </button>
+            <button id="pl-btn-wav" class="format-btn" data-format="wav">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="2 12 5 6 8 16 11 8 14 14 17 10 20 12 22 12"/>
+              </svg>
+              <span>WAV</span>
+              <small>Sans perte</small>
             </button>
           </div>
 

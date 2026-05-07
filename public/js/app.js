@@ -40,6 +40,7 @@ const channelEl = $('#video-channel');
 const viewsEl = $('#video-views');
 const btnMp4 = $('#btn-mp4');
 const btnMp3 = $('#btn-mp3');
+const btnWav = $('#btn-wav');
 const qualityGrid = $('#quality-grid');
 const downloadBtn = $('#download-btn');
 const downloadProgress = $('#download-progress');
@@ -53,6 +54,7 @@ const playlistCountEl = $('#playlist-count');
 const playlistVideosEl = $('#playlist-videos');
 const plBtnMp4 = $('#pl-btn-mp4');
 const plBtnMp3 = $('#pl-btn-mp3');
+const plBtnWav = $('#pl-btn-wav');
 const plQualityGrid = $('#pl-quality-grid');
 const downloadAllBtn = $('#download-all-btn');
 
@@ -219,6 +221,17 @@ function createPlaylistItem(video, index) {
 function renderQualities(gridEl, data) {
   gridEl.innerHTML = '';
 
+  // WAV is lossless — show a badge instead of quality chips
+  if (state.format === 'wav') {
+    const chip = document.createElement('button');
+    chip.className = 'quality-chip active';
+    chip.textContent = 'Sans perte';
+    chip.dataset.quality = 'lossless';
+    state.quality = 'lossless';
+    gridEl.appendChild(chip);
+    return;
+  }
+
   const qualities = state.format === 'mp4'
     ? (data?.videoQualities || [2160, 1440, 1080, 720, 480, 360])
     : (data?.audioQualities || [320, 256, 192, 128]);
@@ -252,10 +265,12 @@ function setFormat(format) {
   if (state.isPlaylist) {
     plBtnMp4.classList.toggle('active', format === 'mp4');
     plBtnMp3.classList.toggle('active', format === 'mp3');
+    if (plBtnWav) plBtnWav.classList.toggle('active', format === 'wav');
     renderQualities(plQualityGrid, state.playlistInfo);
   } else {
     btnMp4.classList.toggle('active', format === 'mp4');
     btnMp3.classList.toggle('active', format === 'mp3');
+    if (btnWav) btnWav.classList.toggle('active', format === 'wav');
     renderQualities(qualityGrid, state.videoInfo);
   }
 }
@@ -453,11 +468,13 @@ pasteBtn.addEventListener('click', async () => {
 // Single video format buttons
 btnMp4.addEventListener('click', () => setFormat('mp4'));
 btnMp3.addEventListener('click', () => setFormat('mp3'));
+if (btnWav) btnWav.addEventListener('click', () => setFormat('wav'));
 downloadBtn.addEventListener('click', startDownload);
 
 // Playlist format buttons
 plBtnMp4.addEventListener('click', () => setFormat('mp4'));
 plBtnMp3.addEventListener('click', () => setFormat('mp3'));
+if (plBtnWav) plBtnWav.addEventListener('click', () => setFormat('wav'));
 downloadAllBtn.addEventListener('click', downloadAllPlaylist);
 
 // Auto-fetch on paste
