@@ -8,3 +8,4 @@ node-v*/
 ffmpeg*/
 *.nupkg
 *.exe
+.github/workflows
