@@ -58,14 +58,13 @@ const plBtnWav = $('#pl-btn-wav');
 const plQualityGrid = $('#pl-quality-grid');
 const downloadAllBtn = $('#download-all-btn');
 
-// ─── Settings Elements ──────────────────────────────────────────────────────
-const settingsBtn = $('#settings-btn');
-const settingsModal = $('#settings-modal');
-const settingsCancel = $('#settings-cancel');
-const settingsSave = $('#settings-save');
-const downloadDirInput = $('#download-dir-input');
+// ─── Folder Bar Elements ─────────────────────────────────────────────────────
 const themeBtn = $('#theme-btn');
-const browseBtn = $('#browse-btn');
+const folderPathDisplay = $('#folder-path-display');
+const folderPathInput = $('#folder-path-input');
+const changeFolderBtn = $('#change-folder-btn');
+const saveFolderBtn = $('#save-folder-btn');
+const cancelFolderBtn = $('#cancel-folder-btn');
 
 // ─── Utility ────────────────────────────────────────────────────────────────
 function formatViews(count) {
@@ -356,8 +355,9 @@ async function startDownload() {
         if (eta) text += ` — ETA ${eta}`;
         progressText.textContent = text;
       },
-      onConverting: () => {
-        progressText.textContent = 'Conversion terminée, préparation du fichier...';
+      onConverting: (pct) => {
+        progressFill.style.width = `${pct}%`;
+        progressText.textContent = `Conversion pour compatibilité (Premiere, etc.)... ${pct}%`;
       },
       onSuccess: async (finalFile) => {
         progressFill.style.width = '100%';
@@ -406,8 +406,9 @@ async function downloadPlaylistItem(videoUrl, itemEl) {
         progressBar.style.width = `${pct}%`;
         progressTextEl.textContent = `${pct}%`;
       },
-      onConverting: () => {
-        progressTextEl.textContent = 'Conversion...';
+      onConverting: (pct) => {
+        progressBar.style.width = `${pct}%`;
+        progressTextEl.textContent = `⚙ ${pct}%`;
       },
       onSuccess: (finalFile) => {
         progressBar.style.width = '100%';
@@ -490,9 +491,12 @@ async function performDownload(videoUrl, callbacks) {
           const pct = Math.round(data.progress || 0);
           callbacks.onProgress(pct, data.speed, data.eta);
 
+        } else if (data.status === 'converting') {
+          const pct = Math.round(data.progress || 0);
+          callbacks.onConverting(pct);
+
         } else if (data.status === 'done') {
           clearInterval(interval);
-          callbacks.onConverting();
           resolve(data.finalFile);
 
         } else if (data.status === 'error') {
@@ -549,14 +553,28 @@ urlInput.addEventListener('paste', () => {
 
 // ─── Theme Toggle ──────────────────────────────────────────────────────────
 function loadTheme() {
-  // Le thème est appliqué par le script inline dans <head> via /api/settings
-  // On ne fait rien ici pour éviter un flash
+  // Applique immédiatement le thème stocké localement (évite un flash),
+  // puis se resynchronise avec le serveur au cas où il aurait changé ailleurs.
+  const saved = localStorage.getItem('theme');
+  if (saved) document.documentElement.setAttribute('data-theme', saved);
+}
+
+async function syncThemeFromServer() {
+  try {
+    const res = await fetch('/api/settings');
+    const data = await res.json();
+    if (data.theme) {
+      document.documentElement.setAttribute('data-theme', data.theme);
+      localStorage.setItem('theme', data.theme);
+    }
+  } catch(e) {}
 }
 
 async function toggleTheme() {
   const cur = document.documentElement.getAttribute('data-theme') || 'light';
   const next = cur === 'dark' ? 'light' : 'dark';
   document.documentElement.setAttribute('data-theme', next);
+  localStorage.setItem('theme', next);
   // Sauvegarde côté serveur — persiste même si le port change au redémarrage
   try {
     await fetch('/api/settings', {
@@ -569,49 +587,76 @@ async function toggleTheme() {
 
 themeBtn.addEventListener('click', toggleTheme);
 loadTheme();
+syncThemeFromServer();
 
-// ─── Settings Events ────────────────────────────────────────────────────────
-async function loadSettings() {
+// ─── Download Folder Bar ─────────────────────────────────────────────────────
+async function loadFolderSetting() {
   try {
     const res = await fetch('/api/settings');
     const data = await res.json();
-    if (data.downloadDir) downloadDirInput.value = data.downloadDir;
+    if (data.downloadDir) {
+      folderPathDisplay.textContent = data.downloadDir;
+      folderPathDisplay.title = data.downloadDir;
+      folderPathInput.value = data.downloadDir;
+    }
   } catch(e) {}
 }
-loadSettings();
+loadFolderSetting();
 
-settingsBtn.addEventListener('click', () => {
-  settingsModal.classList.remove('hidden');
-});
+function enterFolderEditMode() {
+  folderPathDisplay.classList.add('hidden');
+  folderPathInput.classList.remove('hidden');
+  changeFolderBtn.classList.add('hidden');
+  saveFolderBtn.classList.remove('hidden');
+  cancelFolderBtn.classList.remove('hidden');
+  folderPathInput.focus();
+  folderPathInput.select();
+}
 
-settingsCancel.addEventListener('click', () => {
-  settingsModal.classList.add('hidden');
-  loadSettings();
-});
+function exitFolderEditMode() {
+  folderPathDisplay.classList.remove('hidden');
+  folderPathInput.classList.add('hidden');
+  changeFolderBtn.classList.remove('hidden');
+  saveFolderBtn.classList.add('hidden');
+  cancelFolderBtn.classList.add('hidden');
+}
 
-settingsSave.addEventListener('click', async () => {
+async function saveFolder(newPath) {
+  if (!newPath) return;
   try {
     const res = await fetch('/api/settings', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ downloadDir: downloadDirInput.value.trim() })
+      body: JSON.stringify({ downloadDir: newPath })
     });
-    if (res.ok) settingsModal.classList.add('hidden');
-    else alert('Erreur lors de la sauvegarde.');
+    if (res.ok) {
+      exitFolderEditMode();
+      loadFolderSetting();
+    } else {
+      alert('Erreur lors de la sauvegarde du dossier.');
+    }
   } catch(e) {
     alert('Erreur: ' + e.message);
   }
+}
+
+changeFolderBtn.addEventListener('click', async () => {
+  if (window.electronAPI && window.electronAPI.selectFolder) {
+    try {
+      const folderPath = await window.electronAPI.selectFolder();
+      if (folderPath) await saveFolder(folderPath);
+    } catch (e) {
+      console.error('Erreur lors de la sélection du dossier:', e);
+    }
+  } else {
+    enterFolderEditMode();
+  }
 });
 
-browseBtn.addEventListener('click', async () => {
-  try {
-    if (window.electronAPI && window.electronAPI.selectFolder) {
-      const folderPath = await window.electronAPI.selectFolder();
-      if (folderPath) {
-        downloadDirInput.value = folderPath;
-      }
-    }
-  } catch (e) {
-    console.error('Erreur lors de la sélection du dossier:', e);
-  }
+saveFolderBtn.addEventListener('click', () => saveFolder(folderPathInput.value.trim()));
+cancelFolderBtn.addEventListener('click', () => { exitFolderEditMode(); loadFolderSetting(); });
+
+folderPathInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') saveFolder(folderPathInput.value.trim());
+  if (e.key === 'Escape') { exitFolderEditMode(); loadFolderSetting(); }
 });
