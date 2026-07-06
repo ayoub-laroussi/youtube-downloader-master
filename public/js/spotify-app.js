@@ -26,13 +26,12 @@ const downloadProgress = $('#download-progress');
 const progressFill = $('#progress-fill');
 const progressText = $('#progress-text');
 
-const settingsBtn   = $('#settings-btn');
-const settingsModal = $('#settings-modal');
-const settingsCancel = $('#settings-cancel');
-const settingsSave  = $('#settings-save');
-const downloadDirInput = $('#download-dir-input');
 const themeBtn      = $('#theme-btn');
-const browseBtn     = $('#browse-btn');
+const folderPathDisplay = $('#folder-path-display');
+const folderPathInput   = $('#folder-path-input');
+const changeFolderBtn   = $('#change-folder-btn');
+const saveFolderBtn     = $('#save-folder-btn');
+const cancelFolderBtn   = $('#cancel-folder-btn');
 
 // ─── Utility ────────────────────────────────────────────────────────────────
 function showError(msg) {
@@ -224,40 +223,76 @@ async function toggleTheme() {
 themeBtn.addEventListener('click', toggleTheme);
 initTheme();
 
-// ─── Settings ────────────────────────────────────────────────────────────────
-async function loadSettings() {
+// ─── Download Folder Bar ─────────────────────────────────────────────────────
+async function loadFolderSetting() {
   try {
     const res = await fetch('/api/settings');
     const data = await res.json();
-    if (data.downloadDir) downloadDirInput.value = data.downloadDir;
+    if (data.downloadDir) {
+      folderPathDisplay.textContent = data.downloadDir;
+      folderPathDisplay.title = data.downloadDir;
+      folderPathInput.value = data.downloadDir;
+    }
     if (data.theme) {
       document.documentElement.setAttribute('data-theme', data.theme);
       localStorage.setItem('theme', data.theme);
     }
   } catch(e) {}
 }
-loadSettings();
+loadFolderSetting();
 
-settingsBtn.addEventListener('click', () => settingsModal.classList.remove('hidden'));
-settingsCancel.addEventListener('click', () => { settingsModal.classList.add('hidden'); loadSettings(); });
+function enterFolderEditMode() {
+  folderPathDisplay.classList.add('hidden');
+  folderPathInput.classList.remove('hidden');
+  changeFolderBtn.classList.add('hidden');
+  saveFolderBtn.classList.remove('hidden');
+  cancelFolderBtn.classList.remove('hidden');
+  folderPathInput.focus();
+  folderPathInput.select();
+}
 
-settingsSave.addEventListener('click', async () => {
+function exitFolderEditMode() {
+  folderPathDisplay.classList.remove('hidden');
+  folderPathInput.classList.add('hidden');
+  changeFolderBtn.classList.remove('hidden');
+  saveFolderBtn.classList.add('hidden');
+  cancelFolderBtn.classList.add('hidden');
+}
+
+async function saveFolder(newPath) {
+  if (!newPath) return;
   try {
     const res = await fetch('/api/settings', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ downloadDir: downloadDirInput.value.trim() })
+      body: JSON.stringify({ downloadDir: newPath })
     });
-    if (res.ok) settingsModal.classList.add('hidden');
-    else alert('Erreur lors de la sauvegarde.');
-  } catch(e) { alert('Erreur: ' + e.message); }
+    if (res.ok) {
+      exitFolderEditMode();
+      loadFolderSetting();
+    } else {
+      alert('Erreur lors de la sauvegarde du dossier.');
+    }
+  } catch(e) {
+    alert('Erreur: ' + e.message);
+  }
+}
+
+changeFolderBtn.addEventListener('click', async () => {
+  if (window.electronAPI && window.electronAPI.selectFolder) {
+    try {
+      const folderPath = await window.electronAPI.selectFolder();
+      if (folderPath) await saveFolder(folderPath);
+    } catch(e) {}
+  } else {
+    enterFolderEditMode();
+  }
 });
 
-browseBtn.addEventListener('click', async () => {
-  try {
-    if (window.electronAPI && window.electronAPI.selectFolder) {
-      const folderPath = await window.electronAPI.selectFolder();
-      if (folderPath) downloadDirInput.value = folderPath;
-    }
-  } catch(e) {}
+saveFolderBtn.addEventListener('click', () => saveFolder(folderPathInput.value.trim()));
+cancelFolderBtn.addEventListener('click', () => { exitFolderEditMode(); loadFolderSetting(); });
+
+folderPathInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') saveFolder(folderPathInput.value.trim());
+  if (e.key === 'Escape') { exitFolderEditMode(); loadFolderSetting(); }
 });

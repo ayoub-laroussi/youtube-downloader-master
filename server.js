@@ -64,6 +64,83 @@ app.use(express.static(publicPath));
 // ─── Track active downloads ─────────────────────────────────────────────────
 const activeDownloads = new Map();
 
+// ─── Codec probing & auto-transcode (ensures Premiere/NLE compatibility) ────
+// YouTube often serves AV1 or VP9 video (and Opus audio) for high resolutions.
+// Many editors (Premiere Pro included) can't decode AV1, so we verify the
+// codec of the merged file and re-encode to H.264/AAC when needed.
+function probeCodecs(filePath, cb) {
+  execFile(FFMPEG_BIN, ['-i', filePath], { maxBuffer: 10 * 1024 * 1024 }, (error, stdout, stderr) => {
+    const output = stderr || '';
+    const videoMatch = output.match(/Stream #\d+:\d+[^\n]*Video:\s*([a-zA-Z0-9_]+)/);
+    const audioMatch = output.match(/Stream #\d+:\d+[^\n]*Audio:\s*([a-zA-Z0-9_]+)/);
+    const durationMatch = output.match(/Duration:\s*(\d+):(\d+):(\d+\.\d+)/);
+    let duration = 0;
+    if (durationMatch) {
+      duration = parseInt(durationMatch[1], 10) * 3600 + parseInt(durationMatch[2], 10) * 60 + parseFloat(durationMatch[3]);
+    }
+    cb({
+      videoCodec: videoMatch ? videoMatch[1].toLowerCase() : null,
+      audioCodec: audioMatch ? audioMatch[1].toLowerCase() : null,
+      duration,
+    });
+  });
+}
+
+// Re-encodes the file in place to H.264/AAC only if the current codecs aren't
+// already compatible. Reports live progress on `download.progress` while status is 'converting'.
+function ensureCompatibleMp4(filePath, download, cb) {
+  if (!filePath || !fs.existsSync(filePath)) return cb(null);
+
+  probeCodecs(filePath, ({ videoCodec, audioCodec, duration }) => {
+    const videoOk = videoCodec === 'h264';
+    const audioOk = audioCodec === 'aac';
+
+    if (videoOk && audioOk) return cb(null);
+
+    console.log(`[convert] ${filePath} — video:${videoCodec} audio:${audioCodec} → forcing H.264/AAC`);
+
+    download.status = 'converting';
+    download.progress = 0;
+
+    const dir = path.dirname(filePath);
+    const ext = path.extname(filePath);
+    const base = path.basename(filePath, ext);
+    const tmpFile = path.join(dir, `${base}.tmp${ext}`);
+
+    const vArgs = videoOk ? ['-c:v', 'copy'] : ['-c:v', 'libx264', '-preset', 'veryfast', '-crf', '18', '-pix_fmt', 'yuv420p'];
+    const aArgs = audioOk ? ['-c:a', 'copy'] : ['-c:a', 'aac', '-b:a', '192k'];
+
+    const args = ['-y', '-i', filePath, ...vArgs, ...aArgs, '-movflags', '+faststart', tmpFile];
+    const proc = spawn(FFMPEG_BIN, args);
+
+    proc.stderr.on('data', (data) => {
+      const line = data.toString();
+      const m = line.match(/time=(\d+):(\d+):(\d+\.\d+)/);
+      if (m && duration > 0) {
+        const t = parseInt(m[1], 10) * 3600 + parseInt(m[2], 10) * 60 + parseFloat(m[3]);
+        download.progress = Math.min(99, Math.round((t / duration) * 100));
+      }
+    });
+
+    proc.on('close', (code) => {
+      if (code === 0) {
+        try {
+          fs.unlinkSync(filePath);
+          fs.renameSync(tmpFile, filePath);
+          cb(null);
+        } catch (e) {
+          cb(e);
+        }
+      } else {
+        try { fs.existsSync(tmpFile) && fs.unlinkSync(tmpFile); } catch (e) {}
+        cb(new Error('La conversion vidéo a échoué.'));
+      }
+    });
+
+    proc.on('error', (err) => cb(err));
+  });
+}
+
 // ─── Utility: validate URLs ──────────────────────────────────────────
 function isValidYouTubeUrl(url) {
   const pattern = /^(https?:\/\/)?(www\.)?(youtube\.com\/(watch|shorts|playlist)|youtu\.be\/)/;
@@ -225,8 +302,12 @@ app.post('/api/download', (req, res) => {
       url
     );
   } else {
+    // Note: we intentionally don't hard-filter on vcodec/ext here — YouTube doesn't
+    // always expose an H.264 stream at every resolution (e.g. 4K is often AV1/VP9-only).
+    // Compatibility with editors like Premiere is guaranteed afterwards by
+    // ensureCompatibleMp4(), which re-encodes to H.264/AAC if needed.
     args.push(
-      '-f', `bestvideo[height<=${videoQuality}][ext=mp4]+bestaudio[ext=m4a]/bestvideo[height<=${videoQuality}]+bestaudio/best[height<=${videoQuality}]`,
+      '-f', `bestvideo[height<=${videoQuality}]+bestaudio/best[height<=${videoQuality}]`,
       '--merge-output-format', 'mp4',
       '-o', outTemplate,
       url
@@ -282,9 +363,23 @@ app.post('/api/download', (req, res) => {
 
   ytdlp.on('close', (code) => {
     if (code === 0) {
-      download.status = 'done';
-      download.progress = 100;
-      console.log(`[${downloadId}] Download complete!`);
+      if (format === 'mp4') {
+        ensureCompatibleMp4(download.finalFile, download, (err) => {
+          if (err) {
+            download.status = 'error';
+            download.error = err.message;
+            console.error(`[${downloadId}] Conversion failed: ${err.message}`);
+          } else {
+            download.status = 'done';
+            download.progress = 100;
+            console.log(`[${downloadId}] Download complete!`);
+          }
+        });
+      } else {
+        download.status = 'done';
+        download.progress = 100;
+        console.log(`[${downloadId}] Download complete!`);
+      }
     } else {
       download.status = 'error';
       download.error = 'Le téléchargement a échoué.';
